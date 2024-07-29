@@ -1,0 +1,97 @@
+version: "3.8"
+
+networks:
+  traefik_net:
+    external: true
+  net:
+    driver: overlay  # Utilisation du type overlay pour les réseaux Swarm
+
+services:
+  authelia:
+    image: authelia/authelia
+    ports:
+      - "9091:9091"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /etc/authelia:/config
+    environment:
+      TZ: "Europe/Brussels"
+      AUTHELIA_STORAGE_ENCRYPTION_KEY: "I3noKDFBshUzefnf89yFef2juS"
+      AUTHELIA_SESSION_DOMAIN: "swarm.cloudns.ch"
+    deploy:
+      replicas: 3
+      labels:
+        - traefik.http.routers.authelia.rule=Host(`authelia.swarm.cloudns.ch`)
+        - traefik.http.routers.authelia.entrypoints=http
+        - traefik.enable=true
+        - traefik.http.services.authelia.loadbalancer.server.port=9091
+        # TLS
+        - traefik.http.routers.authelias.rule=Host(`authelia.swarm.cloudns.ch`)
+        - traefik.http.routers.authelias.entrypoints=https
+        - traefik.http.routers.authelias.tls.certresolver=letsencrypt
+        # Redirect
+        - traefik.http.routers.authelia.middlewares=https_redirect
+        - traefik.http.middlewares.https_redirect.redirectscheme.scheme=https
+        # Authelia
+        -  traefik.http.middlewares.authelia.forwardauth.address=http://authelia:9091/api/verify?rd=https://authelia.swarm.cloudns.ch
+        - 'traefik.http.middlewares.authelia.forwardauth.trustForwardHeader=true'
+        - 'traefik.http.middlewares.authelia.forwardauth.authResponseHeaders=Remote-User, Remote-Groups'
+        - "traefik.http.routers.authelia.service=authelia"
+    networks:
+      - traefik_net
+
+  redis:
+    image: redis:alpine
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /etc/redis:/data
+    ports:
+      - "9094:9094"
+    networks:
+      - traefik_net
+
+
+  secure:
+    image: containous/whoami
+    networks:
+      - traefik_net
+    ports:
+      - "9092:9092"
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.secure.rule=Host(`whoami-secure.swarm.cloudns.ch`)'
+      - 'traefik.http.routers.secure.entrypoints=http'
+      - 'traefik.http.services.secure.loadbalancer.server.port=8080'
+      # TLS
+      - "traefik.http.routers.secures.rule=Host(`whoami-secure.swarm.cloudns.ch`)"
+      - "traefik.http.routers.secures.entrypoints=https"
+      - "traefik.http.routers.secures.tls.certresolver=letsencrypt"
+      # Redirect
+      - "traefik.http.routers.secure.middlewares=https_redirect"
+      - "traefik.http.middlewares.https_redirect.redirectscheme.scheme=https"
+      # Authelia
+      - "traefik.http.routers.secures.middlewares=authelia@swarm"
+
+
+  public:
+    image: containous/whoami
+    networks:
+      - traefik_net
+    ports:
+      - "9093:9093"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.public.rule=Host(`whoami-public.swarm.cloudns.ch`)"
+      - "traefik.http.routers.public.entrypoints=http"
+      - "traefik.http.services.public.loadbalancer.server.port=8080"
+      # TLS
+      - "traefik.http.routers.publics.rule=Host(`whoami-public.swarm.cloudns.ch`)"
+      - "traefik.http.routers.publics.entrypoints=https"
+      - "traefik.http.routers.publics.tls.certresolver=letsencrypt"
+      # Redirect
+      - "traefik.http.routers.public.middlewares=https_redirect"
+      - "traefik.http.middlewares.https_redirect.redirectscheme.scheme=https"
+      # Authelia
+      - "traefik.http.routers.publics.middlewares=authelia@swarm"
+volumes:
+  authelia-config:

@@ -1,0 +1,13 @@
+- name: Copier le fichier de configuration Nginx
+  copy:
+    src: app/docker-compose.yml
+    dest: /tmp/docker-compose.yml
+
+
+- name: Deploy Traefik stack
+  docker_stack:
+    name: traefik
+    state: present
+    compose:
+      - /tmp/docker-compose.yml
+  when: inventory_hostname in groups['managers'][0]

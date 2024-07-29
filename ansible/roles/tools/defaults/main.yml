@@ -1,0 +1,4 @@
+---
+# defaults file for tools
+traefik_cert_path: "/root/certificates/traefik-cert.crt"
+traefik_key_path: "/root/certificates/traefik.swarm.key"

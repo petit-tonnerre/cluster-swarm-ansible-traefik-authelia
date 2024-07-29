@@ -1,0 +1,5 @@
+
+mysql_root_password: 'root_password'
+authelia_db_name: 'authelia'
+authelia_db_user: 'autheliDB_user'
+authelia_db_password: 'toor'

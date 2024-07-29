@@ -1,0 +1,88 @@
+- name: Create Authelia Directory
+  file:
+    path: /etc/authelia
+    state: directory
+
+- name: Create redis Directory
+  file:
+    path: /etc/redis
+    state: directory
+
+- name: Create Authelia Directory
+  file:
+    path: /etc/authelia/config
+    state: directory
+
+
+- name: Install MySQL server
+  apt:
+    name: mysql-server
+    state: present
+  tags: mysql
+
+- name: Start MySQL service
+  service:
+    name: mysql
+    state: started
+    enabled: yes
+  tags: mysql
+
+- name: Ensure no test database exists
+  mysql_db:
+    login_user: root
+    login_password: "{{ mysql_root_password }}"
+    name: test
+    state: absent
+  tags: mysql
+
+- name: Create Authelia database
+  mysql_db:
+    login_user: root
+    login_password: "{{ mysql_root_password }}"
+    name: "{{ authelia_db_name }}"
+    state: present
+  tags: mysql
+
+- name: Create Authelia database user
+  mysql_user:
+    login_user: root
+    login_password: "{{ mysql_root_password }}"
+    name: "{{ authelia_db_user }}"
+    password: "{{ authelia_db_password }}"
+    priv: "{{ authelia_db_name }}.*:ALL"
+    host: "localhost"
+    state: present
+  tags: mysql
+
+- name: Flush MySQL privileges
+  mysql_user:
+    login_user: root
+    login_password: "{{ mysql_root_password }}"
+    name: "{{ authelia_db_user }}"
+    host: "localhost"
+    state: present
+    check_implicit_admin: true
+  tags: mysql
+
+- name: Copier authelia comppose
+  copy:
+    src: app/authelia/docker-compose-authelia.yml
+    dest: /etc/authelia/docker-compose-authelia.yml
+
+- name: Copier authelia config
+  copy:
+    src: app/authelia/config/configuration.yml
+    dest: /etc/authelia/configuration.yml
+
+- name: Copier authelia user database
+  copy:
+    src: app/authelia/db-user/users_database.yml
+    dest: /etc/authelia/users_database.yml
+
+- name: Deploy authelia stack
+  docker_stack:
+    name: authelia
+    state: present
+    compose:
+      - /etc/authelia/docker-compose-authelia.yml
+  when: inventory_hostname in groups['managers'][0]

@@ -1,0 +1,7 @@
+[managers]
+4.233.110.25 ansible_user=adminuser ansible_ssh_private_key_file=sshkey/private_key.pem
+4.233.110.120 ansible_user=adminuser ansible_ssh_private_key_file=sshkey/private_key.pem
+4.233.110.66 ansible_user=adminuser ansible_ssh_private_key_file=sshkey/private_key.pem
+[workers]
+4.233.110.34 ansible_user=adminuser ansible_ssh_private_key_file=sshkey/private_key2.pem
+4.233.106.7 ansible_user=adminuser ansible_ssh_private_key_file=sshkey/private_key3.pem
