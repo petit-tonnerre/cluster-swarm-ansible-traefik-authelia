@@ -1,59 +1,84 @@
-# intaller et cofnigure un serveur swarm avec un reverse proxy traefik et le service d'authentification Authelia
+# Installer et configurer un serveur Swarm avec un reverse proxy Traefik et le service d'authentification Authelia
 
+Il est nécessaire d'avoir installé Azure CLI.
 
-il est necessaire d'avoir installer azure cli 
-## L'infrastructure necessaire dans se cas on vas utiliser le cloud azure
+## Infrastructure nécessaire
 
-### les vms
+Dans ce cas, nous allons utiliser le cloud Azure.
 
-nous allons utilisez 5 vms sous ubuntu 22.04
+### Les VMs
 
-pour cela on utilise terraform pour deployer l'infra on vas crer donc 1 vnet 5 subnet 5nic 3nsg et 5 ip publique 
+Nous allons utiliser 5 VMs sous Ubuntu 22.04.
 
-## terraform
-      wget -O- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
-      echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
-      sudo apt update && sudo apt install terraform
+Pour cela, nous utiliserons Terraform pour déployer l'infrastructure. Nous allons donc créer 1 VNet, 5 subnets, 5 NIC, 3 NSG et 5 IP publiques.
 
-allez dans le repoertoir ou se situe le main.tf
+## Terraform
 
+1. Ajouter la clé GPG et le dépôt HashiCorp :
+    ```bash
+    wget -O- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+    echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+    sudo apt update && sudo apt install terraform
+    ```
+
+2. Aller dans le répertoire où se trouve `main.tf` :
+    ```bash
     terraform init
     terraform plan
     terraform apply
+    ```
 
+## Ansible
 
-## ansible 
+1. Installer Ansible :
+    ```bash
     sudo apt install ansible
-il nous faut creer les roles ou les recupere dans le docker \
--authelia\
--docker\
--swarm\
--tools\
--myapp\
-``ansible-galaxy init "nom du role"``\
-on configure les playbook ansible pour qu'il execute tout les roles 
+    ```
 
-     - name: init swarm cluster
-       hosts: all
-       become: yes
-       roles: 
-       - docker
-       - swarm
-       - tools
-       - myapp
-       - authelia
+2. Créer les rôles ou les récupérer depuis Docker :
+    - Authelia
+    - Docker
+    - Swarm
+    - Tools
+    - Myapp
 
-pour le role authelia dans le tasks on install les service necessaire on creer les directory et on copie les fichier qui se trouve dans le dossier files et dasn se dossier on y retrouve la config de authelia le l'user database et le docker compose pour authelia, le docker compose install authelia le configure et install aussi whoami pour des test \
-\
-pour le role docker il y a que le contenu du dossier tasks qui est modifier dans lequelle on vient tout simplement installer docker les cles gpg et les depandance qui se trouve variabiliser dans le dossier default\
-\
-pour le role myapp il sagit l'a d'un serveur web nginx\
-\
-pour le role swarm il y a que un fichier dans le tasks qui join les node et initialise le cluster swarm \
-\
-pour le role tools il sagit de l'installation de visualizer et traefik en mode swarm\
-\
-si vous jetez un oeil dans le fichier hosts creer par terraform vous vous rendrez compte que il est lier a un dossier des cles ssh verifiez les permisison\
-\
-il ne reste plus qu'a lancer le playbook 
-``ansible-playbook -i hosts blobu.yaml``
+    Pour créer un rôle :
+    ```bash
+    ansible-galaxy init "nom_du_role"
+    ```
+
+3. Configurer les playbooks Ansible pour exécuter tous les rôles :
+    ```yaml
+    - name: Init Swarm cluster
+      hosts: all
+      become: yes
+      roles:
+        - docker
+        - swarm
+        - tools
+        - myapp
+        - authelia
+    ```
+
+### Détails des rôles
+
+- **Authelia** : Dans le rôle Authelia, vous devez installer les services nécessaires, créer les répertoires et copier les fichiers depuis le dossier `files`, où se trouvent la configuration d'Authelia, la base de données utilisateur et le Docker Compose pour Authelia. Le Docker Compose installe Authelia, le configure et installe également Whoami pour des tests.
+
+- **Docker** : Le rôle Docker consiste uniquement à installer Docker, les clés GPG et les dépendances, qui sont variabilisées dans le dossier `defaults`.
+
+- **Myapp** : Ce rôle concerne un serveur web Nginx.
+
+- **Swarm** : Le rôle Swarm se contente d'un fichier dans `tasks` qui rejoint les nœuds et initialise le cluster Swarm.
+
+- **Tools** : Ce rôle installe Visualizer et Traefik en mode Swarm.
+
+### Configuration de l'accès SSH
+
+Vérifiez que le fichier `hosts` créé par Terraform est lié au dossier des clés SSH et vérifiez les permissions.
+
+### Lancer le playbook
+
+Il ne reste plus qu'à lancer le playbook :
+    ```bash
+    ansible-playbook -i hosts blobu.yaml
+    ```
