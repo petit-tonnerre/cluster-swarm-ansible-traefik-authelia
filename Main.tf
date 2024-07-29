@@ -1,10 +1,4 @@
-provider "azurerm" {
-  features {}
-  subscription_id = "2cec13bc-1624-4259-9794-925c84b693dd"
-  client_id       = "d82a1d61-0999-4075-a3e4-f0908a2ac1f1"
-  client_secret   = "bqL8Q~DG3RunkJ6fU4NFt6_imW-sGoyP5xO1Wdim"
-  tenant_id       = "20051e18-06c8-401a-ba4a-de853e2c26e0"
-}
+
 
 #--------------------------creer le ressource groupe
 resource "azurerm_resource_group" "RG" {
